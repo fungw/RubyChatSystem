@@ -20,32 +20,43 @@ class SERVER
 			begin
 				while x = thread_pool.pop(true)
 					Thread.start(socket = server.accept) do |client|
-						request = client.gets
-						STDERR.puts "=====BEGIN====="
-						STDERR.puts request
-						# GET /echo.php?message=#{user_input} HTTP/1.0\r\n\r\n"
-						message = request.split('=')[1].strip
-						header = message.split(' ')[0].strip
-					 	puts case header
-							when "100"
-								username = message.split(' ')[1].strip
-								chatroom_name = message.split(' ')[2].strip
-								response = "USER_REG_OK"
-								active_users.push(username)
-								chatrooms[username] = chatroom_name	
-							when "101"
-								username = message.split(' ')[1].strip
-								response = "USER_DIS_OK"
-								active_users.delete(username)
-							when "200"
-								msg = message.split(' ')[1].strip
-								response = "MSG_OK"
-							else
-								response = "ERROR UNDEFINED REQUEST"
+					    while true do
+    						request = client.gets
+    						STDERR.puts "=====BEGIN====="
+    						STDERR.puts "REQUEST RECEIVED: " + request
+    						# GET /echo.php?message=#{user_input} HTTP/1.0\r\n\r\n"
+    						header = request.split(' ')[0].strip
+    				# 		STDERR.puts header
+    						puts case header 
+    						    when "HELO"
+    						        STDERR.puts 'HELO message received'
+    						        response = "#{request}IP:54.208.167.157\nPort:#{443}\nStudentID:#{student_id}"
+    						    when /JOIN_CHATROOM/
+    						        SERVER_IP = Socket::getaddrinfo(Socket.gethostname,"echo",Socket::AF_INET)[0][3]
+    						        SERVER_PORT = "443"
+    						        ROOM_REF = Random.new_seed.to_s
+    						        JOIN_ID = Random.new_seed.to_s
+    						        STDERR.puts 'JOINED_CHATROOM message received'
+    						        room_id = request.split('JOIN_CHATROOM:')[1].strip
+    						        response = "JOINED_CHATROOM:" + room_id + "\nSERVER_IP:" + SERVER_IP + "\nPORT:" + SERVER_PORT + "\nROOM_REF:" + ROOM_REF + "\nJOIN_ID:" + JOIN_ID
+    						    when /CLIENT_IP/
+    						        request = client.gets
+    						        STDERR.puts "REQUEST RECEIVED: " + request
+    						        request = client.gets
+    						        STDERR.puts "REQUEST RECEIVED: " + request
+    						        CLIENT_NAME = request.split('CLIENT_NAME:')[1].strip
+    						        response = "CHAT:" + ROOM_REF + "\nCLIENT_NAME:" + CLIENT_NAME + "\nMESSAGE:" + CLIENT_NAME + " has joined this chatroom."
+    						    when /LEAVE_CHATROOM/
+    						        response = "LEFT_CHATROOM:" + ROOM_REF + "\nJOIN_ID:" + JOIN_ID
+    						    when /KILL_SERVICE/
+    						        exit
+    						    else
+    						        response = "ERROR UNDEFINED REQUEST"
+    						end
+    						STDERR.puts "=====END====="
+    					 	STDERR.puts 
+						    client.puts response
 						end
-						STDERR.puts "=====END====="
-						client.puts response
-						client.close
 					end
 				end
 				rescue ThreadError
